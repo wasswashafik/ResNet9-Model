@@ -1,0 +1,140 @@
+clc;
+clear;
+
+%% Load the dataset
+imds = imageDatastore('add your datasetlink', 'IncludeSubfolders', true, 'LabelSource', 'foldernames');
+
+
+%% Data Split
+imds.ReadFcn = @(loc)imresize(imread(loc), [256, 256]);
+[trainImages, valImages] = splitEachLabel(imds, 0.8, 'randomized');
+
+%% Create Array of Layers
+numClasses = numel(categories(imds.Labels));
+
+layers = [
+    imageInputLayer([256 256 3], "Name", "imageinput")
+    convolution2dLayer([3 3], 32, "Name", "conv", "Padding", "same")
+    batchNormalizationLayer("Name", "batchnorm")
+    reluLayer("Name", "relu")
+    convolution2dLayer([3 3], 32, "Name", "conv_1", "Padding", "same")
+    batchNormalizationLayer("Name", "batchnorm_1")
+    reluLayer("Name", "relu_1")
+    maxPooling2dLayer([5 5], "Name", "maxpool", "Padding", "same")
+    convolution2dLayer([3 3], 32, "Name", "conv_2", "Padding", "same")
+    batchNormalizationLayer("Name", "batchnorm_2")
+    reluLayer("Name", "relu_2")
+    convolution2dLayer([3 3], 32, "Name", "conv_3", "Padding", "same")
+    batchNormalizationLayer("Name", "batchnorm_3")
+    reluLayer("Name", "relu_3")
+    convolution2dLayer([3 3], 32, "Name", "conv_7", "Padding", "same")
+    batchNormalizationLayer("Name", "batchnorm_7")
+    reluLayer("Name", "relu_7")
+    maxPooling2dLayer([5 5], "Name", "maxpool_2", "Padding", "same")
+    convolution2dLayer([3 3], 32, "Name", "conv_6", "Padding", "same")
+    batchNormalizationLayer("Name", "batchnorm_6")
+    reluLayer("Name", "relu_6")
+    maxPooling2dLayer([5 5], "Name", "maxpool_1", "Padding", "same")
+    convolution2dLayer([3 3], 32, "Name", "conv_4", "Padding", "same")
+    batchNormalizationLayer("Name", "batchnorm_4")
+    reluLayer("Name", "relu_4")
+    convolution2dLayer([3 3], 32, "Name", "conv_5", "Padding", "same")
+    batchNormalizationLayer("Name", "batchnorm_5")
+    reluLayer("Name", "relu_5")
+    convolution2dLayer([3 3], 32, "Name", "conv_8", "Padding", "same")
+    flattenLayer("Name", "flatten")
+    fullyConnectedLayer(numClasses, "Name", "fc")
+    softmaxLayer("Name", "softmax")
+    classificationLayer("Name", "classoutput")];
+
+%% Plot Layers
+plot(layerGraph(layers));
+
+
+
+%% Define the training options
+options = trainingOptions('sgdm', ...
+    'ExecutionEnvironment', 'gpu',...
+    'InitialLearnRate', 0.001, ...
+    'LearnRateSchedule', 'piecewise', ...
+    'LearnRateDropFactor', 0.1, ...
+    'LearnRateDropPeriod', 10, ...
+    'L2Regularization', 1e-4, ...
+    'MaxEpochs', 10, ...
+    'MiniBatchSize', 16, ...
+    'Shuffle', 'every-epoch', ...
+    'Verbose', true, ...
+    'Plots', 'training-progress');
+
+%% Test the model on the validation set
+layers = trainNetwork(trainImages, options);
+
+%% Predicting the model on the validation set
+YPred = classify(layers, valImages);
+YValidation = valImages.Labels;
+
+%% Get unique class labels from both predicted and true labels
+allLabels = unique([YValidation; YPred]);
+
+%% Get class labels
+classLabels = categories(YValidation);
+
+% Compute confusion matrix with labels
+C = confusionmat(YValidation, YPred, 'Order', classLabels);
+
+% Create a confusion chart
+confChart = confusionchart(YValidation, YPred, 'RowSummary', 'row-normalized', 'ColumnSummary', 'column-normalized');
+
+% Display the confusion matrix chart
+disp('Confusion Matrix Chart:');
+disp(confChart);
+
+% Compute accuracy, precision, recall, and F1 score
+numClasses = numel(classLabels);
+accuracy = sum(diag(C)) / sum(C(:));
+precision = zeros(numClasses, 1);
+recall = zeros(numClasses, 1);
+f1score = zeros(numClasses, 1);
+
+for i = 1:numClasses
+    truePositive = C(i, i);
+    falsePositive = sum(C(:, i)) - truePositive;
+    falseNegative = sum(C(i, :)) - truePositive;
+
+    precision(i) = truePositive / (truePositive + falsePositive);
+    recall(i) = truePositive / (truePositive + falseNegative);
+    f1score(i) = 2 * precision(i) * recall(i) / (precision(i) + recall(i));
+end
+
+% Ensure all vectors have the same length
+accuracy = repmat(accuracy, numClasses, 1);
+
+% Create a table for all performance metrics
+metricsTable = table(accuracy, precision, recall, f1score, 'VariableNames', {'Accuracy', 'Precision', 'Recall', 'F1_Score'}, 'RowNames', classLabels);
+
+% Display the table
+disp('Performance Metrics:');
+disp(metricsTable);
+
+
+
+%% Custom Plotting Function for Training Loss
+function stop = plotTrainingLoss(info)
+    persistent plotObj
+    
+    if info.State == "start"
+        plotObj = plot(info.TrainingLoss, '-o', 'DisplayName', 'Training Loss');
+        hold on;
+        plotObj.ValidationLoss = plot(NaN, NaN, '-o', 'DisplayName', 'Validation Loss');
+        xlabel('Iteration');
+        ylabel('Loss');
+        title('Training and Validation Loss');
+        legend('show');
+    elseif info.State == "iteration"
+        plotObj.TrainingLoss.YData(end+1) = info.TrainingLoss;
+        plotObj.ValidationLoss.XData(end+1) = info.Iteration;
+        plotObj.ValidationLoss.YData(end+1) = info.ValidationLoss;
+    end
+    
+    stop = false;
+end

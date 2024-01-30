@@ -1,11 +1,9 @@
-# ResNet9-Model - PyTorch
+## ResNet9 - PyTorch
 
-This is the official repository for the article "to be updated soon" is to classify the images and train a model to predict any unseen images with good accuracy using `deep neural network,` `Convolutional neural network(CNN)` and `ResNet9`.
-
-We'll implement a significantly larger model this time, called the ResNet, which has 9 convolutional layers. However, one of the key changes to our model is the addition of the **residual block**, which adds the original input back to the output feature map obtained by passing the input through one or more convolutional layers.
+We'll use a significatly larger model this time, called the ResNet9, which has 9 convolutional layers. However, one of the key changes to our model is the addition of the **resudial block**, which adds the original input back to the output feature map obtained by passing the input through one or more convolutional layers.
 ![ResNet9 Architecture](txt-Defined ResNet-9)
 
-Here, we're trying to build a deep residual neural network to classify images from the TADD dataset with around 90+ accuracy. In this project, we'll use the following techniques to achieve SOTA accuracy in a few minutes:
+Here we're trying to build a deep residual neural network to classify images from the CIFAR10 dataset with around 90+ accuracy. In this project, we'll use the following techniques to achieve SOTA accuracy in less than 10 minutes:
 
 -   Data normalization
 -   Data augmentation
@@ -21,8 +19,6 @@ Here, we're trying to build a deep residual neural network to classify images fr
 
     python train.py
 
-
-
-
-
-
+### Reference
+1. ![http://cs231n.stanford.edu/slides/2017/cs231n_2017_lecture9.pdf](http://cs231n.stanford.edu/slides/2017/cs231n_2017_lecture9.pdf)
+2. ![https://github.com/apple/ml-cifar-10-faster](https://github.com/apple/ml-cifar-10-faster)
