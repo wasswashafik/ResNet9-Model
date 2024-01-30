@@ -15,5 +15,5 @@ Here, we're trying to build a deep residual neural network to classify images fr
 ### Technologies Used
 - PyTorch 1.5.x
 
-#C ontact
-In case of any help with the code below, contact me at wasswashafik [at] dcrlab [dot] org
+# Contact
+If you need any help with the code below, contact me at wasswashafik [at] dcrlab [dot] org
